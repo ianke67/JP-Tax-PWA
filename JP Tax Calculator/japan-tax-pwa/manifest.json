@@ -1,0 +1,14 @@
+{
+  "name": "日本退稅計算機",
+  "short_name": "退稅計算",
+  "description": "日本退稅與匯率換算工具",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F7F6F2",
+  "theme_color": "#F7F6F2",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

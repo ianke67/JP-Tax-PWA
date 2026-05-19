@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="退稅計算">
+<meta name="theme-color" content="#F7F6F2">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>日本退稅計算機</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0;padding:0;background:#F7F6F2;font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;color:#1C1C1E;overscroll-behavior:none}
+body{display:flex;flex-direction:column;overflow:hidden}
+
+.screen{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:env(safe-area-inset-top,12px) 0 calc(72px + env(safe-area-inset-bottom,0px)) 0}
+.screen-inner{padding:0 16px}
+
+.tabbar{position:fixed;bottom:0;left:0;right:0;display:flex;background:rgba(247,246,242,0.88);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:0.5px solid rgba(0,0,0,0.12);padding:6px 0 calc(6px + env(safe-area-inset-bottom,0px));z-index:100}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:4px 0}
+.tab-icon{font-size:24px;line-height:1;transition:transform 0.15s}
+.tab-label{font-size:10px;font-weight:500;color:#8E8E93;letter-spacing:0.01em;transition:color 0.15s}
+.tab.active .tab-label{color:#C0392B}
+.tab.active .tab-icon{transform:scale(1.08)}
+
+.page{display:none}
+.page.active{display:block}
+
+.page-header{padding:20px 0 4px;display:flex;align-items:flex-end;justify-content:space-between}
+.page-title{font-size:30px;font-weight:700;letter-spacing:-0.6px}
+.page-sub{font-size:13px;color:#8E8E93;margin-top:1px}
+
+.card{background:#fff;border-radius:16px;padding:0 16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.07),0 0 0 0.5px rgba(0,0,0,0.06)}
+.card-pad{background:#fff;border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.07),0 0 0 0.5px rgba(0,0,0,0.06)}
+
+.row{display:flex;align-items:center;gap:10px;padding:13px 0;border-bottom:0.5px solid #F2F2F7}
+.row:last-child{border-bottom:none;padding-bottom:13px}
+.row:first-child{padding-top:13px}
+.row-label{font-size:13px;color:#8E8E93;flex-shrink:0}
+
+input[type=text],input[type=number]{background:none;border:none;outline:none;font-family:inherit;color:#1C1C1E;-webkit-appearance:none}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
+
+.item-row{display:flex;align-items:center;gap:8px;padding:11px 0;border-bottom:0.5px solid #F2F2F7}
+.item-row:last-child{border-bottom:none}
+.item-name{flex:1;font-size:15px;min-width:0}
+.item-amt{width:90px;font-size:15px;font-weight:600;text-align:right}
+.item-del{width:26px;height:26px;border-radius:50%;background:#FF3B30;border:none;color:#fff;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0;line-height:1;font-weight:300}
+
+.add-btn{width:100%;padding:14px;background:none;border:1.5px dashed #D1D1D6;border-radius:12px;font-size:14px;color:#8E8E93;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;margin-top:4px;font-family:inherit;transition:border-color 0.2s,background 0.2s}
+.add-btn:active{background:#F2F2F7}
+
+input[type=checkbox]{appearance:none;-webkit-appearance:none;width:51px;height:31px;background:#E5E5EA;border-radius:16px;cursor:pointer;position:relative;transition:background 0.25s;flex-shrink:0}
+input[type=checkbox]:checked{background:#C0392B}
+input[type=checkbox]::after{content:'';position:absolute;top:2px;left:2px;width:27px;height:27px;background:#fff;border-radius:50%;box-shadow:0 2px 4px rgba(0,0,0,0.22);transition:left 0.25s}
+input[type=checkbox]:checked::after{left:22px}
+
+.fee-amount{width:52px;border:0.5px solid #D1D1D6;border-radius:8px;padding:5px 7px;font-size:14px;text-align:right;background:#F7F6F2;color:#1C1C1E;font-family:inherit}
+
+.sect{font-size:12px;font-weight:600;color:#8E8E93;letter-spacing:0.06em;text-transform:uppercase;padding:16px 0 8px}
+
+.result-hero{text-align:center;padding:20px 0 16px;border-bottom:0.5px solid #F2F2F7;margin-bottom:4px}
+.result-label{font-size:13px;color:#8E8E93;margin-bottom:4px;font-weight:500}
+.result-amount{font-size:48px;font-weight:700;color:#C0392B;letter-spacing:-1.5px;line-height:1.1}
+.result-twd{font-size:15px;color:#8E8E93;margin-top:5px}
+
+.stat{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:0.5px solid #F2F2F7}
+.stat:last-child{border-bottom:none}
+.stat-l{font-size:14px;color:#8E8E93}
+.stat-r{font-size:15px;font-weight:600}
+
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;padding:5px 12px;border-radius:20px;letter-spacing:0.02em}
+.badge-ok{background:#EAF7EE;color:#1B8C3E}
+.badge-no{background:#FEF3F2;color:#C0392B}
+.badge-warn{background:#FFF8EC;color:#B07000}
+
+/* FX page */
+.fx-block{padding:16px}
+.fx-currency{font-size:13px;font-weight:600;color:#8E8E93;letter-spacing:0.04em;text-transform:uppercase;margin-bottom:4px}
+.fx-value{font-size:52px;font-weight:700;letter-spacing:-2px;line-height:1;min-height:58px;word-break:break-all}
+.swap-wrap{display:flex;align-items:center;gap:12px;padding:8px 0}
+.swap-line{flex:1;height:0.5px;background:#F2F2F7}
+.swap-btn{width:40px;height:40px;border-radius:50%;background:#F7F6F2;border:0.5px solid #E5E5EA;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.15s;flex-shrink:0}
+.swap-btn:active{background:#EBEBF0}
+
+.keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px 0}
+.key{background:#fff;border:none;border-radius:12px;height:56px;font-size:22px;font-weight:500;cursor:pointer;font-family:inherit;color:#1C1C1E;box-shadow:0 1px 2px rgba(0,0,0,0.09),0 0 0 0.5px rgba(0,0,0,0.07);transition:transform 0.08s,box-shadow 0.08s;display:flex;align-items:center;justify-content:center;-webkit-user-select:none}
+.key:active{transform:scale(0.94);box-shadow:0 0 0 0.5px rgba(0,0,0,0.07)}
+.key-dim{background:#F2F2F7;color:#636366;font-size:17px}
+.key-red{background:#C0392B;color:#fff}
+
+.quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:8px 0}
+.quick-cell{background:#F7F6F2;border-radius:12px;padding:10px 14px}
+.quick-jpy{font-size:12px;color:#8E8E93;margin-bottom:2px}
+.quick-twd{font-size:17px;font-weight:600}
+
+/* Info */
+.rule{display:flex;gap:14px;padding:13px 0;border-bottom:0.5px solid #F2F2F7}
+.rule:last-child{border-bottom:none}
+.rule-dot{width:8px;height:8px;border-radius:50%;background:#C0392B;margin-top:5px;flex-shrink:0}
+.rule-title{font-size:15px;font-weight:600;margin-bottom:3px}
+.rule-desc{font-size:13px;color:#636366;line-height:1.55}
+
+.chip{display:inline-flex;align-items:center;font-size:12px;padding:3px 10px;border-radius:20px;margin:2px 2px 0 0}
+.chip-blue{background:#EBF3FF;color:#1056CC}
+.chip-gray{background:#F2F2F7;color:#636366}
+</style>
+</head>
+<body>
+
+<div class="screen" id="screen">
+
+<!-- ── 退稅計算 ───────────────────────────────── -->
+<div class="page active" id="page-tax">
+<div class="screen-inner">
+  <div class="page-header">
+    <div>
+      <div class="page-title">退稅計算</div>
+      <div class="page-sub">消費稅 10%｜舊制適用</div>
+    </div>
+    <button onclick="clearAll()" style="font-size:13px;color:#8E8E93;background:none;border:none;cursor:pointer;padding:6px 0;font-family:inherit">全部清除</button>
+  </div>
+
+  <div class="sect">品項清單（未稅金額）</div>
+  <div class="card" id="items-card">
+    <div id="item-list"></div>
+    <button class="add-btn" onclick="addItem()">＋ 新增品項</button>
+    <div style="height:12px"></div>
+  </div>
+
+  <div class="sect">設定</div>
+  <div class="card">
+    <div class="row">
+      <div style="flex:1">
+        <div style="font-size:15px">扣除手續費</div>
+        <div style="font-size:12px;color:#8E8E93;margin-top:1px">百貨／伊勢丹／Loft 等約 1~1.55%</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div id="fee-wrap" style="display:none;align-items:center;gap:4px">
+          <input class="fee-amount" type="number" id="fee-pct" value="1.55" min="0" max="5" step="0.05" oninput="recalc()">
+          <span style="font-size:13px;color:#8E8E93">%</span>
+        </div>
+        <input type="checkbox" id="has-fee" onchange="toggleFee()">
+      </div>
+    </div>
+  </div>
+
+  <div id="warn-low" style="display:none;padding:11px 14px;border-radius:12px;margin-bottom:12px;font-size:13px;color:#B07000;background:#FFF8EC;font-weight:500">
+    ⚠️ 未稅總金額未滿 ¥5,000，尚不符合退稅門檻
+  </div>
+
+  <div class="sect">計算結果</div>
+  <div class="card-pad">
+    <div style="text-align:center;margin-bottom:14px">
+      <span id="badge" class="badge badge-no">✗ 未達門檻</span>
+    </div>
+    <div class="result-hero">
+      <div class="result-label">可退稅金額</div>
+      <div class="result-amount" id="r-refund">¥0</div>
+      <div class="result-twd" id="r-refund-twd">≈ NT$0</div>
+    </div>
+    <div class="stat">
+      <span class="stat-l">未稅總金額</span>
+      <span class="stat-r" id="r-pretax">¥0</span>
+    </div>
+    <div class="stat">
+      <span class="stat-l">含稅總金額</span>
+      <span class="stat-r" id="r-total">¥0</span>
+    </div>
+    <div class="stat">
+      <span class="stat-l">實付金額（含稅 − 退稅）</span>
+      <span class="stat-r" id="r-final">¥0</span>
+    </div>
+  </div>
+  <div style="height:8px"></div>
+</div>
+</div>
+
+<!-- ── 匯率換算 ───────────────────────────────── -->
+<div class="page" id="page-fx">
+<div class="screen-inner">
+  <div class="page-header">
+    <div>
+      <div class="page-title">匯率換算</div>
+      <div class="page-sub">手動輸入最新匯率</div>
+    </div>
+  </div>
+
+  <div class="card-pad" style="padding:0">
+    <div class="fx-block" style="border-bottom:0.5px solid #F2F2F7">
+      <div class="fx-currency" id="from-label">日圓 JPY</div>
+      <div class="fx-value" id="from-val">0</div>
+    </div>
+    <div class="fx-block" style="padding:8px 16px">
+      <div class="swap-wrap">
+        <div class="swap-line"></div>
+        <button class="swap-btn" onclick="swapFx()" aria-label="交換幣種">⇅</button>
+        <div class="swap-line"></div>
+      </div>
+    </div>
+    <div class="fx-block" style="border-top:0.5px solid #F2F2F7">
+      <div class="fx-currency" id="to-label">台幣 TWD</div>
+      <div class="fx-value" id="to-val" style="color:#C0392B">0</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <span class="row-label">¥100 =</span>
+      <input type="number" id="rate-jpy-twd" value="21.9" step="0.1" min="1"
+        style="flex:1;font-size:17px;font-weight:600;text-align:right" oninput="recalcFx();recalc()">
+      <span style="font-size:14px;color:#8E8E93;white-space:nowrap">NT$</span>
+    </div>
+    <div class="row" style="border-bottom:none">
+      <span class="row-label">$1 =</span>
+      <input type="number" id="rate-usd-twd" value="32.0" step="0.1" min="1"
+        style="flex:1;font-size:17px;font-weight:600;text-align:right" oninput="recalcFx()">
+      <span style="font-size:14px;color:#8E8E93;white-space:nowrap">NT$</span>
+    </div>
+  </div>
+
+  <div class="card-pad" style="padding:8px 16px">
+    <div class="quick-grid" id="quick-grid"></div>
+  </div>
+
+  <div class="sect">數字鍵盤</div>
+  <div class="card-pad" style="padding:4px 12px 12px">
+    <div class="keypad">
+      <button class="key" onclick="kp('7')">7</button>
+      <button class="key" onclick="kp('8')">8</button>
+      <button class="key" onclick="kp('9')">9</button>
+      <button class="key" onclick="kp('4')">4</button>
+      <button class="key" onclick="kp('5')">5</button>
+      <button class="key" onclick="kp('6')">6</button>
+      <button class="key" onclick="kp('1')">1</button>
+      <button class="key" onclick="kp('2')">2</button>
+      <button class="key" onclick="kp('3')">3</button>
+      <button class="key key-dim" onclick="kp('000')">000</button>
+      <button class="key" onclick="kp('0')">0</button>
+      <button class="key key-dim" onclick="kp('del')" aria-label="刪除">⌫</button>
+    </div>
+  </div>
+  <div style="height:8px"></div>
+</div>
+</div>
+
+<!-- ── 使用說明 ───────────────────────────────── -->
+<div class="page" id="page-info">
+<div class="screen-inner">
+  <div class="page-header">
+    <div>
+      <div class="page-title">使用說明</div>
+      <div class="page-sub">舊制（2026/10/31 以前出發）</div>
+    </div>
+  </div>
+
+  <div class="sect">退稅條件</div>
+  <div class="card">
+    <div class="rule">
+      <div class="rule-dot"></div>
+      <div>
+        <div class="rule-title">消費門檻</div>
+        <div class="rule-desc">同一家店同一天，<strong>未稅滿 ¥5,000</strong> 才能退稅。注意是未稅價，含稅 ¥5,280 但未稅 ¥4,800 不符合資格</div>
+      </div>
+    </div>
+    <div class="rule">
+      <div class="rule-dot"></div>
+      <div>
+        <div class="rule-title">退稅比例與手續費</div>
+        <div class="rule-desc">消費稅 10%（部分食品 8%）。部分百貨（伊勢丹、丸井、Loft）另收 ~1.55% 手續費，可在設定中開啟扣除</div>
+      </div>
+    </div>
+    <div class="rule">
+      <div class="rule-dot"></div>
+      <div>
+        <div class="rule-title">當天辦理，不可補辦</div>
+        <div class="rule-desc">退稅必須購物當天在同一間店辦理，帶護照到 Tax-Free 櫃台，或在免稅結帳機直接扣抵</div>
+      </div>
+    </div>
+    <div class="rule" style="border-bottom:none">
+      <div class="rule-dot"></div>
+      <div>
+        <div class="rule-title">出境攜帶要求</div>
+        <div class="rule-desc">2025/4 起取消「別送處理」，免稅品<strong>不能再寄回台灣</strong>，需本人隨身攜帶出境</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sect">商品分類</div>
+  <div class="card">
+    <div class="rule">
+      <div class="rule-dot"></div>
+      <div>
+        <div class="rule-title">一般物品（可在日本境內使用）</div>
+        <div class="rule-desc">入境後 6 個月內攜帶出境即可</div>
+        <div style="margin-top:6px">
+          <span class="chip chip-blue">衣服</span><span class="chip chip-blue">包包</span><span class="chip chip-blue">鞋子</span><span class="chip chip-blue">家電</span><span class="chip chip-blue">3C</span><span class="chip chip-blue">玩具</span><span class="chip chip-blue">鐘錶</span><span class="chip chip-blue">珠寶</span>
+        </div>
+      </div>
+    </div>
+    <div class="rule" style="border-bottom:none">
+      <div class="rule-dot" style="background:#B07000"></div>
+      <div>
+        <div class="rule-title">消耗品（需密封，30 天出境）</div>
+        <div class="rule-desc">密封袋在日本境內不得拆開，液體超過 100ml 需託運</div>
+        <div style="margin-top:6px">
+          <span class="chip chip-gray">藥妝</span><span class="chip chip-gray">食品</span><span class="chip chip-gray">飲料</span><span class="chip chip-gray">化妝品</span><span class="chip chip-gray">健康食品</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sect">2026/11 新制預覽</div>
+  <div class="card">
+    <div class="rule">
+      <div class="rule-dot" style="background:#27AE60"></div>
+      <div>
+        <div class="rule-title" style="color:#27AE60">10/31 以前出發 → 不影響</div>
+        <div class="rule-desc">購物當下直接退稅，流程完全不變，無需擔心新制</div>
+      </div>
+    </div>
+    <div class="rule" style="border-bottom:none">
+      <div class="rule-dot" style="background:#8E8E93"></div>
+      <div>
+        <div class="rule-title" style="color:#8E8E93">11/1 起 → 先付後退</div>
+        <div class="rule-desc">購物先支付含稅全額，機場出境時統一辦理退稅。取消消耗品 50 萬上限、取消密封袋規定</div>
+      </div>
+    </div>
+  </div>
+  <div style="height:8px"></div>
+</div>
+</div>
+
+</div><!-- /screen -->
+
+<!-- TAB BAR -->
+<nav class="tabbar" role="navigation" aria-label="主選單">
+  <div class="tab active" id="tab-tax" onclick="switchTab('tax')">
+    <div class="tab-icon">🧾</div>
+    <div class="tab-label">退稅計算</div>
+  </div>
+  <div class="tab" id="tab-fx" onclick="switchTab('fx')">
+    <div class="tab-icon">💱</div>
+    <div class="tab-label">匯率換算</div>
+  </div>
+  <div class="tab" id="tab-info" onclick="switchTab('info')">
+    <div class="tab-icon">📋</div>
+    <div class="tab-label">使用說明</div>
+  </div>
+</nav>
+
+<script>
+// ── 退稅計算 ─────────────────────────────────────
+let items = [], idc = 0;
+const MIN = 5000, RATE = 0.10;
+
+function addItem(name='', amt='') {
+  const id = ++idc;
+  items.push({id, name, amt: parseFloat(amt)||0});
+  renderItems();
+  recalc();
+}
+function removeItem(id) {
+  items = items.filter(i => i.id !== id);
+  renderItems();
+  recalc();
+}
+function setItem(id, field, val) {
+  const it = items.find(i => i.id === id);
+  if (!it) return;
+  it[field] = field === 'amt' ? (parseFloat(val)||0) : val;
+  recalc();
+}
+function renderItems() {
+  document.getElementById('item-list').innerHTML = items.map(it => `
+    <div class="item-row">
+      <input class="item-name" type="text" placeholder="品項名稱" value="${esc(it.name)}"
+        oninput="setItem(${it.id},'name',this.value)" style="border:none;outline:none;background:none;font-family:inherit;color:#1C1C1E">
+      <input class="item-amt" type="number" placeholder="0" value="${it.amt||''}" min="0" step="100"
+        oninput="setItem(${it.id},'amt',this.value)"
+        style="border:none;outline:none;background:none;font-family:inherit;color:#1C1C1E">
+      <button class="item-del" onclick="removeItem(${it.id})" aria-label="刪除">×</button>
+    </div>`).join('');
+}
+function esc(s){ return String(s).replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+function toggleFee() {
+  const on = document.getElementById('has-fee').checked;
+  document.getElementById('fee-wrap').style.display = on ? 'flex' : 'none';
+  recalc();
+}
+
+function recalc() {
+  const pretax = items.reduce((s, i) => s + (i.amt||0), 0);
+  const feeOn  = document.getElementById('has-fee').checked;
+  const feePct = feeOn ? (parseFloat(document.getElementById('fee-pct').value)||0)/100 : 0;
+  const tax    = pretax * RATE;
+  const refund = Math.round(tax * (1 - feePct));
+  const total  = Math.round(pretax + tax);
+  const final  = total - refund;
+
+  const jpyRate = (parseFloat(document.getElementById('rate-jpy-twd')?.value)||21.9) / 100;
+  const ok = pretax >= MIN;
+  const warn = pretax > 0 && pretax < MIN;
+
+  document.getElementById('warn-low').style.display = warn ? 'block' : 'none';
+
+  const badge = document.getElementById('badge');
+  badge.className = 'badge ' + (ok ? 'badge-ok' : warn ? 'badge-warn' : 'badge-no');
+  badge.textContent = ok ? '✓ 符合退稅門檻' : (warn ? '⚠ 未達門檻' : '— 請輸入金額');
+
+  f('r-pretax',  '¥' + fmt(pretax));
+  f('r-total',   '¥' + fmt(total));
+  f('r-refund',  '¥' + fmt(refund));
+  f('r-refund-twd', '≈ NT$' + fmt(Math.round(refund * jpyRate)));
+  f('r-final',   '¥' + fmt(final));
+}
+
+function clearAll() {
+  if (!items.length) return;
+  if (confirm('確定清除所有品項？')) { items = []; renderItems(); recalc(); }
+}
+
+// ── 匯率換算 ─────────────────────────────────────
+let fxStr = '', fxFromJPY = true;
+
+function kp(k) {
+  if (k === 'del') { fxStr = fxStr.slice(0,-1); }
+  else if (k === '000') { if (fxStr && fxStr !== '0') fxStr += '000'; }
+  else { if (fxStr.length < 10) fxStr += k; }
+  fxStr = fxStr.replace(/^0+(\d)/, '$1');
+  recalcFx();
+}
+
+function swapFx() {
+  fxFromJPY = !fxFromJPY; fxStr = '';
+  document.getElementById('from-label').textContent = fxFromJPY ? '日圓 JPY' : '台幣 TWD';
+  document.getElementById('to-label').textContent   = fxFromJPY ? '台幣 TWD' : '日圓 JPY';
+  recalcFx();
+}
+
+function recalcFx() {
+  const amt  = parseInt(fxStr)||0;
+  const rate = (parseFloat(document.getElementById('rate-jpy-twd')?.value)||21.9) / 100;
+  const usdRate = (parseFloat(document.getElementById('rate-usd-twd')?.value)||32.0);
+  const result  = fxFromJPY ? Math.round(amt * rate) : Math.round(amt / rate);
+
+  document.getElementById('from-val').textContent = fmt(amt) || '0';
+  document.getElementById('to-val').textContent   = fmt(result);
+
+  const refs = [500,1000,5000,10000,30000,50000];
+  document.getElementById('quick-grid').innerHTML = refs.map(v => {
+    const twd = Math.round(v * rate);
+    return `<div class="quick-cell"><div class="quick-jpy">¥${fmt(v)}</div><div class="quick-twd">NT$${fmt(twd)}</div></div>`;
+  }).join('');
+}
+
+// ── Tabs ─────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
+  document.getElementById('screen').scrollTop = 0;
+}
+
+// ── Util ─────────────────────────────────────────
+function fmt(n) { return Math.round(n).toLocaleString('zh-TW'); }
+function f(id, v) { const el = document.getElementById(id); if (el) el.textContent = v; }
+
+// ── Init ─────────────────────────────────────────
+addItem('衣服／包包／鞋子', 8000);
+addItem('Tomica／LEGO 玩具', 3000);
+addItem('吹風機／電動刮鬍刀', 12000);
+addItem('手機／耳機 3C', 25000);
+recalcFx();
+
+// Service Worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
